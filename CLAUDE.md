@@ -31,6 +31,13 @@ Streamlit app (Hebrew UI) for a carpentry shop: design a wardrobe (columns with 
 - Panel names are Hebrew strings and are used as keys (in counting and in tests), so renaming one breaks those references.
 - `test_wardrobe.py` also runs the whole UI headless through `streamlit.testing.v1.AppTest`. Widgets have keys like `shelves0` and `drawers0`.
 
+## Voice agent
+
+- `voice_agent.py` (no streamlit import) holds the model constants at the top (`STT_MODEL`, `LLM_MODEL`, `TTS_MODEL`, `TTS_VOICE`, `TTS_INSTRUCTIONS`), `LIMITS`, the `update_design` function tool, and `transcribe`/`run_agent`/`speak`, which take an OpenAI `client` so tests pass a fake.
+- `apply_changes(state, changes)` is the trust boundary: the LLM output is untrusted, so it clamps to `LIMITS`, coerces to int, ignores unknown keys and out-of-range columns, and returns Hebrew notes. It writes to the widget keys (`width,height,depth,t,back_t,plinth,n,doors`, `shelves{i}` etc.).
+- In `app.py` the voice processing runs at the top, before the other widgets (Streamlit forbids setting a widget key after its widget exists in the same run). It uses `session_state["cfg"]`/`["summary"]` stored by the previous run, handles each recording once (hash in `last_audio`), then `st.rerun()`.
+- Requires `OPENAI_API_KEY` (env or `.streamlit/secrets.toml`, which is gitignored). Without it the voice section is disabled and the rest of the app works.
+
 ## Workflow
 
 - Plan with Opus 5.5 (`claude-opus-5-5`); execute with Sonnet 5.5 (`claude-sonnet-5-5`, pass `model: "sonnet"` when delegating to a subagent).
